@@ -1,5 +1,6 @@
 
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -7,8 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/components/ui/use-toast";
+import { AuthContext } from "../App";
+import { useBlogStore } from "@/store/blogStore";
 
 const WriteBlog = () => {
+  const navigate = useNavigate();
+  const { username } = useContext(AuthContext);
+  const addBlog = useBlogStore((state) => state.addBlog);
+  
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [coverImage, setCoverImage] = useState("");
@@ -18,7 +25,6 @@ const WriteBlog = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation
     if (!title.trim()) {
       toast({
         title: "Missing title",
@@ -36,19 +42,31 @@ const WriteBlog = () => {
       });
       return;
     }
-    
-    // In a real app, this would be sent to an API
-    console.log({ title, content, coverImage, tags: tags.split(",").map(tag => tag.trim()) });
+
+    const newBlog = {
+      id: Date.now().toString(),
+      title: title.trim(),
+      excerpt: content.substring(0, 150) + "...",
+      author: username,
+      date: new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      }),
+      readTime: Math.max(1, Math.ceil(content.split(' ').length / 200)) + " min read",
+      coverImage,
+      tags: tags.split(',').map(tag => tag.trim()).filter(Boolean),
+      content
+    };
+
+    addBlog(newBlog);
     
     toast({
       title: "Blog post saved",
       description: "Your blog post has been saved successfully!"
     });
     
-    // Simulate redirect to created post
-    setTimeout(() => {
-      window.alert("In a real app, you would be redirected to your published post now.");
-    }, 1500);
+    navigate('/search');
   };
 
   return (
