@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Heart, Share } from "lucide-react";
+import { Heart, Share, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 
 export interface BlogPost {
@@ -16,6 +16,7 @@ export interface BlogPost {
   coverImage?: string;
   tags?: string[];
   likes?: number;
+  content?: string; // Added content field
 }
 
 interface BlogCardProps {
@@ -56,7 +57,7 @@ const BlogCard = ({ post, featured = false }: BlogCardProps) => {
 
   return (
     <Card className={`overflow-hidden h-full transition-shadow hover:shadow-md ${featured ? 'md:flex' : ''}`}>
-      {post.coverImage && (
+      {post.coverImage ? (
         <div className={`${featured ? 'md:w-1/2' : 'w-full h-48'}`}>
           <img 
             src={post.coverImage} 
@@ -64,12 +65,16 @@ const BlogCard = ({ post, featured = false }: BlogCardProps) => {
             className="w-full h-full object-cover"
           />
         </div>
+      ) : (
+        <div className={`${featured ? 'md:w-1/2' : 'w-full h-48'} bg-muted flex items-center justify-center`}>
+          <BookOpen className="h-12 w-12 text-muted-foreground/50" />
+        </div>
       )}
       <div className={`${featured ? 'md:w-1/2' : 'w-full'}`}>
         <CardHeader className="p-4 md:p-6">
           {post.tags && post.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-2">
-              {post.tags.slice(0, 3).map((tag, index) => (
+              {post.tags.filter(tag => tag.trim() !== '').slice(0, 3).map((tag, index) => (
                 <span 
                   key={index} 
                   className="bg-muted text-xs px-2 py-1 rounded-full text-muted-foreground"
