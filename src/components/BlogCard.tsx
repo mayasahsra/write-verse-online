@@ -1,7 +1,10 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Heart, Share } from "lucide-react";
+import { toast } from "sonner";
 
 export interface BlogPost {
   id: string;
@@ -12,6 +15,7 @@ export interface BlogPost {
   readTime: string;
   coverImage?: string;
   tags?: string[];
+  likes?: number;
 }
 
 interface BlogCardProps {
@@ -20,6 +24,36 @@ interface BlogCardProps {
 }
 
 const BlogCard = ({ post, featured = false }: BlogCardProps) => {
+  const [likes, setLikes] = useState(post.likes || 0);
+  const [isLiked, setIsLiked] = useState(false);
+
+  const handleLike = () => {
+    if (isLiked) {
+      setLikes(prev => prev - 1);
+      setIsLiked(false);
+      toast.info("Removed from favorites");
+    } else {
+      setLikes(prev => prev + 1);
+      setIsLiked(true);
+      toast.success("Added to favorites");
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      await navigator.share({
+        title: post.title,
+        text: post.excerpt,
+        url: window.location.origin + `/blog/${post.id}`,
+      });
+      toast.success("Shared successfully!");
+    } catch (error) {
+      // If Web Share API is not supported, copy to clipboard
+      navigator.clipboard.writeText(window.location.origin + `/blog/${post.id}`);
+      toast.success("Link copied to clipboard!");
+    }
+  };
+
   return (
     <Card className={`overflow-hidden h-full transition-shadow hover:shadow-md ${featured ? 'md:flex' : ''}`}>
       {post.coverImage && (
@@ -52,9 +86,32 @@ const BlogCard = ({ post, featured = false }: BlogCardProps) => {
           </Link>
           <p className="text-muted-foreground mt-2 line-clamp-2">{post.excerpt}</p>
         </CardHeader>
-        <CardFooter className="p-4 md:p-6 pt-0 flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">{post.author}</div>
-          <div className="text-sm text-muted-foreground">{post.readTime} • {post.date}</div>
+        <CardFooter className="p-4 md:p-6 pt-0">
+          <div className="flex items-center justify-between w-full">
+            <div className="text-sm text-muted-foreground">
+              {post.author} • {post.readTime} • {post.date}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleLike}
+                className={isLiked ? 'text-red-500' : ''}
+                aria-label="Like post"
+              >
+                <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
+                {likes > 0 && <span className="ml-1 text-sm">{likes}</span>}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleShare}
+                aria-label="Share post"
+              >
+                <Share className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
         </CardFooter>
       </div>
     </Card>

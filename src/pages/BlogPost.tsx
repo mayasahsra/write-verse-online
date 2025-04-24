@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import Navbar from "@/components/Navbar";
@@ -6,8 +5,10 @@ import Footer from "@/components/Footer";
 import { BlogPost as BlogPostType } from "@/components/BlogCard";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Heart, Share } from "lucide-react";
+import { toast } from "sonner";
 
-// Mock data for demonstration
 const mockPosts: Record<string, BlogPostType & { fullContent: string }> = {
   "1": {
     id: "1",
@@ -125,9 +126,10 @@ const BlogPost = () => {
   const [post, setPost] = useState<(BlogPostType & { fullContent: string }) | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+  const [likes, setLikes] = useState(0);
+  const [isLiked, setIsLiked] = useState(false);
+
   useEffect(() => {
-    // Simulate API fetch
     const fetchPost = () => {
       setLoading(true);
       
@@ -144,6 +146,34 @@ const BlogPost = () => {
     
     fetchPost();
   }, [id]);
+
+  const handleLike = () => {
+    if (isLiked) {
+      setLikes(prev => prev - 1);
+      setIsLiked(false);
+      toast.info("Removed from favorites");
+    } else {
+      setLikes(prev => prev + 1);
+      setIsLiked(true);
+      toast.success("Added to favorites");
+    }
+  };
+
+  const handleShare = async () => {
+    if (!post) return;
+    
+    try {
+      await navigator.share({
+        title: post.title,
+        text: post.excerpt,
+        url: window.location.href,
+      });
+      toast.success("Shared successfully!");
+    } catch (error) {
+      navigator.clipboard.writeText(window.location.href);
+      toast.success("Link copied to clipboard!");
+    }
+  };
 
   if (loading) {
     return (
@@ -188,12 +218,10 @@ const BlogPost = () => {
     );
   }
 
-  // Function to render markdown-like content
   const renderContent = (content: string) => {
     return content.split('\n').map((paragraph, index) => {
       if (paragraph.trim() === '') return <br key={index} />;
       
-      // Handle headings
       if (paragraph.startsWith('## ')) {
         return <h2 key={index} className="text-2xl font-bold mt-8 mb-4">{paragraph.substring(3)}</h2>;
       }
@@ -201,7 +229,6 @@ const BlogPost = () => {
         return <h3 key={index} className="text-xl font-bold mt-6 mb-3">{paragraph.substring(4)}</h3>;
       }
       
-      // Handle lists
       if (paragraph.startsWith('1. ') || paragraph.startsWith('2. ') || paragraph.startsWith('3. ') || paragraph.startsWith('4. ')) {
         return (
           <li key={index} className="ml-6 list-decimal my-1">
@@ -218,7 +245,6 @@ const BlogPost = () => {
         );
       }
       
-      // Regular paragraph
       return <p key={index} className="my-4">{paragraph}</p>;
     });
   };
@@ -241,7 +267,6 @@ const BlogPost = () => {
             )}
             
             <div className="p-6 md:p-10">
-              {/* Header */}
               <div className="mb-8">
                 {post.tags && post.tags.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-4">
@@ -260,18 +285,39 @@ const BlogPost = () => {
                   {post.title}
                 </h1>
                 
-                <div className="flex items-center text-muted-foreground">
-                  <span className="font-medium">{post.author}</span>
-                  <span className="mx-2">•</span>
-                  <span>{post.date}</span>
-                  <span className="mx-2">•</span>
-                  <span>{post.readTime}</span>
+                <div className="flex items-center justify-between">
+                  <div className="text-muted-foreground">
+                    <span className="font-medium">{post.author}</span>
+                    <span className="mx-2">•</span>
+                    <span>{post.date}</span>
+                    <span className="mx-2">•</span>
+                    <span>{post.readTime}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleLike}
+                      className={isLiked ? 'text-red-500' : ''}
+                      aria-label="Like post"
+                    >
+                      <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
+                      {likes > 0 && <span className="ml-1 text-sm">{likes}</span>}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleShare}
+                      aria-label="Share post"
+                    >
+                      <Share className="h-5 w-5" />
+                    </Button>
+                  </div>
                 </div>
               </div>
               
               <Separator className="my-6" />
               
-              {/* Content */}
               <div className="blog-content prose prose-lg max-w-none">
                 {renderContent(post.fullContent)}
               </div>
