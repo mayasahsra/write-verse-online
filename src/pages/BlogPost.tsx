@@ -5,10 +5,12 @@ import Footer from "@/components/Footer";
 import { BlogPost as BlogPostType } from "@/components/BlogCard";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
-import { Heart, Share } from "lucide-react";
 import { toast } from "sonner";
 import { useBlogStore } from "@/store/blogStore";
+import { BlogPostSkeleton } from "@/components/blog/BlogPostSkeleton";
+import { BlogPostError } from "@/components/blog/BlogPostError";
+import { BlogContent } from "@/components/blog/BlogContent";
+import { BlogHeader } from "@/components/blog/BlogHeader";
 
 const mockPosts: Record<string, BlogPostType & { fullContent: string }> = {
   "1": {
@@ -178,100 +180,12 @@ const BlogPost = () => {
     }
   };
 
-  const handleShare = async () => {
-    if (!post) return;
-    
-    try {
-      await navigator.share({
-        title: post.title,
-        text: post.excerpt,
-        url: window.location.href,
-      });
-      toast.success("Shared successfully!");
-    } catch (error) {
-      navigator.clipboard.writeText(window.location.href);
-      toast.success("Link copied to clipboard!");
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex flex-col min-h-screen">
-        <Navbar />
-        <main className="flex-grow py-10">
-          <div className="container-custom">
-            <div className="animate-pulse">
-              <div className="h-8 bg-muted rounded w-3/4 mb-4"></div>
-              <div className="h-4 bg-muted rounded w-1/4 mb-8"></div>
-              <div className="h-64 bg-muted rounded mb-8"></div>
-              <div className="space-y-3">
-                <div className="h-4 bg-muted rounded"></div>
-                <div className="h-4 bg-muted rounded"></div>
-                <div className="h-4 bg-muted rounded w-5/6"></div>
-              </div>
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-  
-  if (error || !post) {
-    return (
-      <div className="flex flex-col min-h-screen">
-        <Navbar />
-        <main className="flex-grow py-10">
-          <div className="container-custom text-center py-16">
-            <h1 className="text-3xl font-bold mb-4">Blog Post Not Found</h1>
-            <p className="text-muted-foreground mb-8">
-              The blog post you're looking for doesn't exist or has been removed.
-            </p>
-            <a href="/" className="text-primary hover:underline">
-              Return to homepage
-            </a>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  const renderContent = (content: string) => {
-    return content.split('\n').map((paragraph, index) => {
-      if (paragraph.trim() === '') return <br key={index} />;
-      
-      if (paragraph.startsWith('## ')) {
-        return <h2 key={index} className="text-2xl font-bold mt-8 mb-4">{paragraph.substring(3)}</h2>;
-      }
-      if (paragraph.startsWith('### ')) {
-        return <h3 key={index} className="text-xl font-bold mt-6 mb-3">{paragraph.substring(4)}</h3>;
-      }
-      
-      if (paragraph.startsWith('1. ') || paragraph.startsWith('2. ') || paragraph.startsWith('3. ') || paragraph.startsWith('4. ')) {
-        return (
-          <li key={index} className="ml-6 list-decimal my-1">
-            {paragraph.substring(paragraph.indexOf(' ') + 1)}
-          </li>
-        );
-      }
-      
-      if (paragraph.startsWith('- ') || paragraph.startsWith('* ')) {
-        return (
-          <li key={index} className="ml-6 list-disc my-1">
-            {paragraph.substring(2)}
-          </li>
-        );
-      }
-      
-      return <p key={index} className="my-4">{paragraph}</p>;
-    });
-  };
+  if (loading) return <BlogPostSkeleton />;
+  if (error || !post) return <BlogPostError />;
 
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
-      
       <main className="flex-grow py-10">
         <div className="container-custom max-w-4xl">
           <Card className="overflow-hidden shadow-lg">
@@ -286,65 +200,24 @@ const BlogPost = () => {
             )}
             
             <div className="p-6 md:p-10">
-              <div className="mb-8">
-                {post.tags && post.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {post.tags.map((tag, index) => (
-                      <span 
-                        key={index} 
-                        className="bg-secondary px-3 py-1 rounded-full text-sm text-secondary-foreground"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                
-                <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">
-                  {post.title}
-                </h1>
-                
-                <div className="flex items-center justify-between">
-                  <div className="text-muted-foreground">
-                    <span className="font-medium">{post.author}</span>
-                    <span className="mx-2">•</span>
-                    <span>{post.date}</span>
-                    <span className="mx-2">•</span>
-                    <span>{post.readTime}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleLike}
-                      className={isLiked ? 'text-red-500' : ''}
-                      aria-label="Like post"
-                    >
-                      <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
-                      {likes > 0 && <span className="ml-1 text-sm">{likes}</span>}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleShare}
-                      aria-label="Share post"
-                    >
-                      <Share className="h-5 w-5" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
+              <BlogHeader
+                title={post.title}
+                author={post.author}
+                date={post.date}
+                readTime={post.readTime}
+                tags={post.tags}
+                likes={likes}
+                isLiked={isLiked}
+                onLike={handleLike}
+              />
               
               <Separator className="my-6" />
               
-              <div className="blog-content prose prose-lg max-w-none">
-                {renderContent(post.fullContent || post.content || '')}
-              </div>
+              <BlogContent content={post.fullContent || post.content || ''} />
             </div>
           </Card>
         </div>
       </main>
-      
       <Footer />
     </div>
   );
