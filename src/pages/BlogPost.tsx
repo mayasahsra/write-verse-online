@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Heart, Share } from "lucide-react";
 import { toast } from "sonner";
+import { useBlogStore } from "@/store/blogStore";
 
 const mockPosts: Record<string, BlogPostType & { fullContent: string }> = {
   "1": {
@@ -123,19 +124,37 @@ const mockPosts: Record<string, BlogPostType & { fullContent: string }> = {
 
 const BlogPost = () => {
   const { id } = useParams<{ id: string }>();
-  const [post, setPost] = useState<(BlogPostType & { fullContent: string }) | null>(null);
+  const [post, setPost] = useState<(BlogPostType & { fullContent?: string }) | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [likes, setLikes] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
+  
+  const storedBlogs = useBlogStore((state) => state.blogs);
 
   useEffect(() => {
     const fetchPost = () => {
       setLoading(true);
       
       setTimeout(() => {
-        if (id && mockPosts[id]) {
+        if (!id) {
+          setError("Invalid blog ID");
+          setLoading(false);
+          return;
+        }
+
+        if (mockPosts[id]) {
           setPost(mockPosts[id]);
+          setLoading(false);
+          return;
+        }
+        
+        const userBlog = storedBlogs.find(blog => blog.id === id);
+        if (userBlog) {
+          setPost({
+            ...userBlog,
+            fullContent: userBlog.content
+          });
           setLoading(false);
         } else {
           setError("Blog post not found");
@@ -145,7 +164,7 @@ const BlogPost = () => {
     };
     
     fetchPost();
-  }, [id]);
+  }, [id, storedBlogs]);
 
   const handleLike = () => {
     if (isLiked) {
@@ -319,7 +338,7 @@ const BlogPost = () => {
               <Separator className="my-6" />
               
               <div className="blog-content prose prose-lg max-w-none">
-                {renderContent(post.fullContent)}
+                {renderContent(post.fullContent || post.content || '')}
               </div>
             </div>
           </Card>
