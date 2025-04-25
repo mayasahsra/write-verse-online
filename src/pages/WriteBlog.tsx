@@ -1,4 +1,3 @@
-
 import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
@@ -62,11 +61,11 @@ const WriteBlog = () => {
     addBlog(newBlog);
     
     toast({
-      title: "Blog post saved",
-      description: "Your blog post has been saved successfully!"
+      title: "Blog post published",
+      description: "Redirecting to your new blog post..."
     });
     
-    navigate('/search');
+    navigate(`/blog/${newBlog.id}`);
   };
 
   return (
